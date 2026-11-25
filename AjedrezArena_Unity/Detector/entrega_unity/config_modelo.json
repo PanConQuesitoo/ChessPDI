@@ -1,0 +1,29 @@
+{
+  "clases": [
+    "rey",
+    "reina",
+    "torre",
+    "alfil",
+    "caballo",
+    "peon",
+    "vacia"
+  ],
+  "tam_cnn": 96,
+  "media": [
+    0.41712436079978943,
+    0.45106974244117737,
+    0.4406738579273224
+  ],
+  "desviacion": [
+    0.2681484818458557,
+    0.22883881628513336,
+    0.22224360704421997
+  ],
+  "tam_casilla": 100,
+  "margen_recorte": 0.15,
+  "rotacion_extra": 0,
+  "arquitectura": "CNNAjedrez: 4 bloques conv (32-64-128-256) + 2 lineales",
+  "mejor_epoca": 36,
+  "val_loss": 0.0153,
+  "val_acc": 0.9972
+}

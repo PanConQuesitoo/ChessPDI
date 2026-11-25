@@ -1,0 +1,29 @@
+﻿AJEDREZ SOBRE ARENA
+Proyecto final de Procesamiento Digital de Imágenes - Ingeniería Multimedia (UAO)
+=================================================================================
+
+ANTES DE JUGAR (una sola vez, ~10 minutos, necesita internet)
+  1. Descomprime la carpeta completa (no lo abras desde dentro del .zip).
+  2. Entra a la carpeta Detector y haz doble clic en  instalar_dependencias.bat
+     (instala Python 3.12 si no lo tienes, y las librerías de la cámara).
+
+JUGAR
+  - Doble clic en AjedrezArena.exe
+  - La cámara se enciende sola. Todo se maneja con la mano:
+      * el cursor es el punto entre tu pulgar y tu índice
+      * para elegir un botón: junta los dedos (pinza) o deja la mano quieta 1 segundo
+  - En el menú elige  "Jugar solo con la mano"  (no necesitas tablero físico):
+      1. elige el escenario
+      2. muestra la mano a la cámara y junta los dedos una vez
+      3. apunta a una pieza, junta los dedos para agarrarla, llévala y sepáralos para soltar
+      Rápido = fuego · muy rápido = rayo · pieza quieta 2 s en la mano = supernova
+  - Lleva la mano al borde derecho de la pantalla para abrir el Menú (o pulsa ESC).
+  - "Jugar con tablero" es para un tablero de ajedrez real visto desde arriba por la cámara.
+
+SI ALGO FALLA
+  - "Falta instalar las librerías": ejecuta Detector\instalar_dependencias.bat
+    (el botón "Instalar librerías" del juego lo abre; ahí sí funciona el mouse).
+  - La cámara no prende: cierra Zoom, Teams, OBS... que la estén usando, y pulsa Reintentar.
+  - Imagen negra: destapa la cámara o prende la luz.
+  - Lo que pasó queda escrito en Detector\ajedrez_vivo.log
+  - Sin cámara también se puede jugar con el mouse ("Jugar sin cámara").

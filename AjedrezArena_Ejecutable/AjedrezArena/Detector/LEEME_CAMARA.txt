@@ -1,0 +1,29 @@
+AJEDREZ SOBRE ARENA - CAMARA (v5)
+=================================
+
+1) UNA SOLA VEZ: doble clic en instalar_dependencias.bat
+   (crea la carpeta venv con mediapipe, torch, etc. Tarda varios minutos.)
+
+2) En Unity (o en AjedrezArena.exe), dale Play. Nada mas.
+   La camara se enciende sola y se apaga al salir.
+   Si algo falla, el mensaje esta en ajedrez_vivo.log (en esta carpeta).
+
+DOS FORMAS DE JUGAR
+- "Jugar con tablero": tablero real visto desde arriba. Pasa por Calibracion.
+- "Jugar solo con la mano": no necesitas tablero. Tu mano es un puntero en la
+  pantalla (como el control del Wii). Junta los dedos para agarrar, separalos
+  para soltar.
+
+COMO SE USA EL MENU (sin mouse ni teclado)
+- El cursor es el punto entre tu pulgar y tu indice.
+- Para elegir un boton: junta los dedos (pinza) o deja la mano quieta ~1 segundo.
+- Durante el juego: lleva la mano a la derecha -> boton "Menu". (ESC tambien sirve.)
+
+CONSEJOS PARA LA CAMARA
+- Luz pareja; si la imagen sale negra, la camara esta tapada o el cuarto oscuro.
+- Python prueba solo varios formatos de camara y se queda con el que da imagen
+  y al menos 15 imagenes por segundo (lo guarda en camara_ok.json).
+
+MODO MANUAL (sin Unity, para pruebas)
+  venv\Scripts\python.exe ajedrez_vivo.py --ventanas
+  venv\Scripts\python.exe ajedrez_vivo.py --diagnostico   (mide los fps de la camara)
