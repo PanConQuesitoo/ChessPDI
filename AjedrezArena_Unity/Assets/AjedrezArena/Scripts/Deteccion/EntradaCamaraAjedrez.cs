@@ -11,8 +11,9 @@
 //    3) Código     -> otro script llama a  Enviar(...)  o  EnviarTexto(...)
 //    4) Webcam     -> DetectorCamaraPython.cs (toma las fotos y llama al detector)
 //
-//  Con ajedrez_vivo.py la mano virtual sigue tu mano real (UDP 5065) y hace la
-//  jugada con sus efectos; la detección que llega después la CONFIRMA o la CORRIGE.
+//  Jugando CON tablero real, la cámara es la única verdad: solo se juega lo que
+//  cambia en el tablero (la mano virtual queda pausada desde MenuAjedrez).
+//  Jugando SIN tablero, la mano es la única verdad y aquí no llega ninguna jugada.
 //
 //  Formatos de texto aceptados: ver DeteccionCamara.Parsear.
 //

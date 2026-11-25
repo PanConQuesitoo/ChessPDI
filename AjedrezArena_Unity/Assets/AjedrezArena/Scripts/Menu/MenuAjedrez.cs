@@ -55,6 +55,9 @@ namespace AjedrezArena
         Pantalla pantalla = Pantalla.Encendiendo;
         bool calibrarParaJugar, camaraValidada, sinCamara, pinzaProbada, agarrePrepPrev;
         bool sinTablero { get { return SinTablero; } set { SinTablero = value; } }
+        /// <summary>Con tablero real manda solo la cámara (los cambios en el tablero): la mano virtual no mueve piezas.
+        /// Sin tablero, o sin cámara, la mano es la que juega.</summary>
+        bool ManoJuega { get { return sinTablero || sinCamara; } }
         float tCuenta, tListo, tPantalla;
 
         // cámara de fondo
@@ -196,7 +199,7 @@ namespace AjedrezArena
         {
             if (nueva && arranque.Tablero != null) arranque.Tablero.NuevaPartida();
             if (camara != null && !sinCamara) camara.Modo(sinTablero ? "libre" : "juego", nueva);
-            if (arranque.Mano != null) arranque.Mano.Pausar(false);
+            if (arranque.Mano != null) arranque.Mano.Pausar(!ManoJuega);
             // vuelo desde el giro 360° hasta la vista de juego
             posIni = cam != null ? cam.transform.position : Vector3.zero;
             rotIni = cam != null ? cam.transform.rotation : Quaternion.identity;
@@ -220,7 +223,7 @@ namespace AjedrezArena
         void Continuar()
         {
             if (camara != null && !sinCamara) camara.Modo(sinTablero ? "libre" : "juego", false);
-            if (arranque.Mano != null) arranque.Mano.Pausar(false);
+            if (arranque.Mano != null) arranque.Mano.Pausar(!ManoJuega);
             Ir(Pantalla.Juego);
         }
 

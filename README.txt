@@ -1,6 +1,6 @@
 # Ajedrez Interactivo sobre Arena
 
-Un ajedrez 3D en Unity que se juega con la mano frente a una webcam, sin mouse ni teclado. Se puede jugar sobre un tablero real o sin ninguno. La mano real mueve una mano virtual, como el control del Wii. Al soltar una pieza, el juego mide qué tan rápido y brusco fue el movimiento y lo convierte en luz, fuego, rayo o supernova.
+Un ajedrez 3D en Unity que se juega frente a una webcam. Se puede jugar sobre un tablero real o sin ninguno. Con tablero, la cámara ve qué ficha cambió de lugar y el juego repite esa jugada. Sin tablero, la mano real mueve una mano virtual, como el control del Wii; al soltar una pieza, el juego mide qué tan rápido y brusco fue el movimiento y lo convierte en luz, fuego, rayo o supernova.
 
 Proyecto final de Procesamiento Digital de Imágenes, Ingeniería Multimedia, Universidad Autónoma de Occidente (Cali), 2026-2.
 Autores: Emmanuel Carrera Cardona y Camila López Vásquez.
@@ -47,7 +47,7 @@ Integrar el ajedrez con técnicas de procesamiento digital de imágenes y aprend
 
 Dos programas que corren al mismo tiempo en el mismo PC. Un programa en Python (`Detector/ajedrez_vivo.py`) abre la cámara, sigue la mano con MediaPipe, encuentra el tablero con OpenCV y lee las piezas con la red neuronal. El juego en Unity dibuja todo, aplica las reglas del ajedrez y genera los efectos. Se comunican por UDP dentro del mismo PC. Unity enciende y apaga el programa de Python sin intervención del usuario.
 
-Con tablero, la cámara mira desde arriba un tablero real: Python lo calibra, sigue la mano sobre las casillas y confirma cada jugada con la red. Sin tablero, la cámara solo ve la mano, que funciona como puntero sobre la pantalla; la pinza agarra y suelta las piezas.
+Cada modo tiene una sola fuente de verdad. Con tablero, la cámara mira desde arriba un tablero real y solo cuenta lo que cambia en él: cuando una ficha cambia de lugar, Python lo detecta, la red lee las casillas y Unity hace esa jugada. La mano virtual queda oculta y no mueve piezas. Sin tablero, la cámara solo ve la mano, que funciona como puntero sobre la pantalla; la pinza agarra y suelta las piezas.
 
 ## 2. Arquitectura del sistema
 
@@ -85,7 +85,7 @@ En Unity, los scripts están en `Assets/AjedrezArena/Scripts/`:
 | `Menu/ConexionCamara.cs` | Lanza Python, recibe su estado y su video, le envía órdenes y lo apaga al salir |
 | `Menu/MenuAjedrez.cs` | Pantallas del menú, cursor de la mano, cámara 360°, calibración y pausa |
 | `Mano/EntradaManoUDP.cs`, `Mano/ControladorMano.cs` | Mano virtual: posición, agarre, velocidad, aceleración y efecto al soltar |
-| `Deteccion/EntradaCamaraAjedrez.cs`, `Deteccion/DeteccionCamara.cs` | Recibe las jugadas leídas por la red y las concilia con lo que hizo la mano |
+| `Deteccion/EntradaCamaraAjedrez.cs`, `Deteccion/DeteccionCamara.cs` | Recibe las jugadas leídas por la red, las valida con las reglas y las ejecuta en el tablero 3D |
 | `Ajedrez/ReglasAjedrez.cs` | Motor de reglas puro (sin Unity), verificado con perft |
 | `Tablero/ControladorTablero.cs` | Partida, piezas, capturas y animaciones |
 | `Efectos/*`, `Escenarios/*` | Partículas, rayos, sonidos sintetizados, iluminación y los 10 escenarios |
@@ -115,7 +115,8 @@ Si Python pasa 10 segundos sin recibir el ping de Unity, se cierra para no dejar
 4. Cámara en tiempo real. Unimos todo en `ajedrez_vivo.py`: seguimiento de la mano, calibración automática, detección de quietud y lectura con la red, comunicándose con Unity por UDP.
 5. Menú con la mano. Quitamos el mouse y el teclado del flujo normal: Unity enciende la cámara, el menú se maneja con la pinza y la calibración da el visto bueno sola.
 6. Modo sin tablero y distribución. Agregamos el puntero tipo Wii para jugar sin tablero físico y el menú que genera el `.exe`.
-7. Pruebas. Pruebas automáticas con imágenes sintéticas y cámaras simuladas, y pruebas con la webcam real del proyecto.
+7. Una fuente de verdad por modo. Con tablero dejamos de usar la mano para mover piezas: solo cuentan los cambios del tablero real. También quitamos la exigencia de la posición inicial y la orientación automática, y el menú volvió a aceptar el mouse.
+8. Pruebas. Pruebas automáticas con imágenes sintéticas y cámaras simuladas, y pruebas con la webcam real del proyecto.
 
 ### Técnicas implementadas
 
@@ -126,7 +127,7 @@ Si Python pasa 10 segundos sin recibir el ping de Unity, se cierra para no dejar
 | Enderezar | Homografía con `getPerspectiveTransform` y `warpPerspective` a 100 px por casilla | PDI tradicional |
 | Ajustar la cuadrícula | Perfiles de Sobel en x e y; se buscan 9 líneas equiespaciadas sobre los picos | PDI tradicional |
 | Confirmar que es un tablero | Correlación del brillo 8×8 con un patrón ±1; umbral 0,30 (0,35 para el visto bueno) | PDI tradicional |
-| Orientar | Ocupación de filas (0/180° contra 90/270°), brillo de las piezas (blancas abajo), rey en la columna E (espejo) | PDI + reglas |
+| Orientar | Retirado en la v6: el tablero se usa tal como se ve; el giro se corrige a mano con *Girar 90°* | - |
 | Detectar fin de jugada | Diferencia de cuadros en gris: píxel cambiado si difiere más de 22 niveles; actividad si cambia más del 1,5 %; quietud de 0,6 s | PDI tradicional |
 | Seguir la mano | MediaPipe Hands, 21 puntos, imagen reducida a 640 px | Deep Learning preentrenado |
 | Agarrar y soltar | Pinza normalizada con histéresis (cerrar < 0,30, abrir > 0,42) | Geometría sobre los puntos |
@@ -210,13 +211,15 @@ if (plano.Raycast(r, out float d)) p = r.GetPoint(d);   // aquí aparece la mano
 
 ![Puntero sin tablero](docs/img/puntero.png)
 
-### Conciliación entre la mano y la cámara
+### Una sola fuente de verdad por modo
 
-Si el juego esperara a la red para mover la pieza, se sentiría lento. Por eso la jugada se ejecuta cuando el jugador suelta la pinza, y la lectura de la cámara llega después a confirmarla (`InterpreteDeteccion.Conciliar`). Si la cámara ve la misma jugada, queda confirmada. Si ve otra cosa o no entiende, se mantiene la jugada de la mano (`permitirDeshacer = false`). Si la mano no hizo nada y la cámara ve una jugada legal, se ejecuta. Las lecturas con confianza menor a 0,7 esperan confirmación.
+Con tablero manda el tablero real. Al empezar la partida, `MenuAjedrez` pausa la mano virtual (`ManoJuega` es falso), así que la mano del jugador no mueve nada en pantalla. El jugador mueve la ficha física; cuando retira la mano y todo queda quieto, Python compara el tablero con la última lectura, deduce qué ficha cambió de lugar y manda la jugada. `EntradaCamaraAjedrez` la interpreta con las reglas (`InterpreteDeteccion.Interpretar`): si es legal, la pieza 3D se mueve con su animación; si no, se avisa "Jugada no válida" y el tablero 3D no cambia. Las lecturas con confianza menor a 0,7 esperan confirmación (Enter para aceptar, Retroceso para descartar).
+
+Sin tablero manda la mano: la pinza agarra, lleva y suelta la pieza, y la jugada se ejecuta al soltar. En este modo Python no envía jugadas. Si se juega sin cámara, el mouse hace el papel de la mano.
 
 ### Efectos según el movimiento
 
-Mientras la mano lleva una pieza se mide su rapidez y su aceleración. Al soltar se toma el máximo de los últimos 0,45 s, para que cuente el impulso aunque la mano frene justo antes:
+Estos efectos son del modo sin tablero, donde la mano mueve la pieza. Con tablero, la jugada que llega de la cámara se anima con un impulso suave. Mientras la mano lleva una pieza se mide su rapidez y su aceleración. Al soltar se toma el máximo de los últimos 0,45 s, para que cuente el impulso aunque la mano frene justo antes:
 
 ![Efectos](docs/img/efectos.png)
 
@@ -260,7 +263,7 @@ La lectura de un tablero sintético de prueba se ve así: el tablero detectado e
 
 ## 6. Interfaz gráfica de usuario
 
-El menú se maneja solo con la mano. El cursor es el punto medio entre el pulgar y el índice. Para elegir un botón se juntan los dedos o se deja el cursor quieto 1,1 s encima, mientras un anillo se va llenando. El mouse solo funciona si la cámara no está disponible, por ejemplo para pulsar *Instalar librerías* la primera vez.
+El menú se maneja solo con la mano. El cursor es el punto medio entre el pulgar y el índice. Para elegir un botón se juntan los dedos o se deja el cursor quieto 1,1 s encima, mientras un anillo se va llenando. El mouse también funciona siempre en el menú: al moverlo o hacer clic toma el control del cursor, y a los 4 s sin usarlo vuelve a mandar la mano.
 
 ![Flujo del menú](docs/img/menu.png)
 
@@ -269,7 +272,7 @@ El menú se maneja solo con la mano. El cursor es el punto medio entre el pulgar
 | Encendiendo | Unity lanza Python y muestra el avance. Si algo falla, ofrece *Instalar librerías*, *Otra cámara*, *Reintentar* o *Jugar sin cámara* |
 | Principal | Fondo con la cámara girando 360° alrededor del tablero. Botones: *Jugar con tablero*, *Jugar solo con la mano*, *Calibrar cámara*, *Salir*. Una tarjeta muestra el video y el estado de la cámara |
 | Tableros | Los 10 escenarios con miniatura. Al elegir uno cambia el fondo |
-| Calibración (con tablero) | Video y lista de verificación: cámara, tablero, quietud, sin manos, posición inicial y lectura estable. Indica qué casilla revisar (por ejemplo, E2) |
+| Calibración (con tablero) | Video y lista de verificación: cámara, tablero, quietud, sin manos y lectura de la red. No exige la posición inicial: el tablero se lee tal como está, con las blancas abajo |
 | Preparar la mano (sin tablero) | Video en espejo con la zona útil marcada; basta con juntar los dedos una vez |
 | Juego | Al llevar la mano al borde derecho aparece el botón *Menú* (también con ESC) |
 | Pausa | *Continuar*, *Siguiente escenario*, *Nueva partida*, *Menú principal*, *Salir* |
@@ -292,8 +295,10 @@ Cada escenario tiene su propia mano:
 
 1. Abrir el juego (Play en Unity o `AjedrezArena.exe`). La cámara se enciende sola; la primera vez tarda entre 10 y 20 segundos.
 2. Para jugar sin tablero: *Jugar solo con la mano* → elegir escenario → *Preparar la mano* → juntar los dedos una vez → cuenta 3-2-1.
-3. Para jugar con tablero: poner el tablero en la posición inicial bajo la cámara, elegir *Jugar con tablero* → escenario → *Calibrar y jugar*, y retirar las manos. Cuando todo está en verde, el juego empieza solo.
-4. Para mover una pieza: apuntar, juntar los dedos para agarrar, llevarla y separar los dedos para soltarla.
+3. Para jugar con tablero: poner el tablero con las blancas abajo bajo la cámara (si queda de lado, usar *Girar 90°*), elegir *Jugar con tablero* → escenario → *Calibrar y jugar*, y retirar las manos. Cuando todo está en verde, el juego empieza solo.
+4. Para mover una pieza con tablero: moverla en el tablero real y retirar la mano. El juego repite la jugada en pantalla cuando la cámara ve el cambio.
+5. Para mover una pieza sin tablero: apuntar, juntar los dedos para agarrar, llevarla y separar los dedos para soltarla.
+6. El menú también se puede usar con el mouse. Para volver al menú durante la partida: ESC, o llevar la mano fuera del tablero (con tablero) o al borde derecho (sin tablero).
 
 ## 7. Resultados
 
@@ -344,14 +349,15 @@ El cuello de botella es la webcam. Con poca luz alarga la exposición y entrega 
 
 Cada técnica quedó en la parte donde rinde más. La geometría clásica (bordes, homografía, correlación con el patrón del tablero) encuentra y endereza el tablero sin entrenamiento y, cuando falla, se sabe por qué. La red neuronal resuelve solo lo que las reglas no alcanzan, distinguir piezas parecidas, y llega a 99,5 % de exactitud por casilla. MediaPipe da el seguimiento de la mano sin tener que entrenar nada. Las reglas del ajedrez cierran el ciclo: corrigen lo que la cámara no puede saber, como el color de la pieza.
 
-La decisión que más mejoró la experiencia fue no esperar a la red. La jugada ocurre al soltar la pinza y la cámara la confirma después. Así la mano virtual responde al instante, aunque leer el tablero tome casi un segundo.
+La decisión que más ordenó el sistema fue darle a cada modo una sola fuente de verdad. Con tablero, el tablero real decide: no hay que conciliar lo que hizo la mano con lo que vio la cámara, y una jugada mal leída nunca queda en pantalla si no es legal. El costo es una espera de casi un segundo entre mover la ficha y verla moverse en el juego. Sin tablero, la mano decide y responde al instante.
 
 ### Limitaciones
 
 - La red no distingue colores, y una captura entre piezas de la misma clase solo cambia una casilla. Se deduce con las reglas cuando hay una sola captura posible; si hay dos, hace falta otra lectura.
 - La red se entrenó con un solo tablero de madera. Con un tablero de otro estilo o colores, habría que reentrenarla.
 - Con poca luz bajan los fps y suben los errores de lectura.
-- El modo con tablero necesita la cámara desde arriba y el tablero completo en la imagen.
+- El modo con tablero necesita la cámara desde arriba y el tablero completo en la imagen, con las blancas abajo.
+- Con tablero, la jugada aparece en pantalla casi un segundo después de mover la ficha, porque hay que esperar a que la mano salga y todo quede quieto.
 - El `.exe` no incluye Python: la persona que lo recibe debe ejecutar `instalar_dependencias.bat`, que descarga cerca de 1 GB.
 
 ### Oportunidades de mejora
