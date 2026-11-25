@@ -156,6 +156,8 @@ Para las piezas, la CNN propia `CNNAjedrez` tiene cuatro bloques Conv 3×3 + Bat
 
 No usamos deep learning para encontrar el tablero porque la geometría clásica lo resuelve bien, es más rápida y permite explicar cada fallo (por ejemplo, "la calidad de cuadrícula es 0,22"). La red solo entra donde las reglas a mano no alcanzan: distinguir un alfil de un peón visto desde arriba.
 
+RED ENTRENADA: https://drive.google.com/drive/folders/151C5OaGafa77hv8e8QRVqiWlXLdY84CG?usp=sharing
+
 ## 4. Implementación
 
 ### Estructura del repositorio
